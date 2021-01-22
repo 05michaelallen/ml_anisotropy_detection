@@ -42,7 +42,9 @@ os.chdir("/Users/mallen/Documents/ecostress_p2/code")
 city = 'la'
 rtype = 'none'
 seed = 2021
-imgcheck = True
+
+# flags
+imgcheck = False
 diagnostic_plots = False
 ext_shp = False
 sub_manhattan = False
@@ -187,7 +189,7 @@ out_meta.update({"dtype": 'float64',
                  "count": 3})
 
 ### filter metadata to retrieve image indices 
-meta_vz = meta[meta['view_zenith'] > 12]
+meta_vz = meta[(meta['view_zenith'] > 12) & (meta['view_azimuth_adj'] > 180) & (meta['view_azimuth_adj'] < 360)]
 meta_vza = meta_vz[(meta['solar_zenith_adj'] > -10) & (meta['hourfrac'] > 12)]
 
 ### rescale each image
@@ -336,6 +338,7 @@ if output:
     outvab.append("view zenith:" + str(np.round(meta_vza['view_zenith'].mean(), 3)))
     outvab.append("time:" + str(np.round(meta_vza['hourfrac'].mean(), 3)))
     outvab.append("view azimuth:" + str(np.round(meta_vza['view_azimuth_adj'].mean(), 3)))
+    outvab.append("solar azimuth:" + str(np.round(meta_vza['solar_azimuth_adj'].mean(), 3)))
     outvab.append("oob:" + str(np.round(oob, 3)))
     outvab.append("test_r2:" + str(np.round(r2, 3)))
     outvab.append("rmse:" + str(np.round(rmse0, 3)))

@@ -11,3 +11,10 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+
+os.chdir("/Users/mallen/Documents/ecostress_p2/code")
+city = 'la'
+seed = 2021
+
+# flags
+
