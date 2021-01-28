@@ -48,13 +48,10 @@ complst = np.array(complst)
 # =============================================================================
 # analysis
 # =============================================================================
-# plot side by side
-fig, [ax0, ax1] = plt.subplots(1, 2)
+# plot eg
+fig, ax0 = plt.subplots(1, 1)
+p0 = ax0.imshow(complst[2], vmin = -2, vmax = 2)
 
-p0 = ax0.imshow(complst[0], vmin = -2, vmax = 2)
-#plt.colorbar(p0)
-p1 = ax1.imshow(complst[1], vmin = -2, vmax = 2)
-#plt.colorbar(p1)
 
 # plot difference? west - east
 complst_d = complst[0] - complst[1]
@@ -62,19 +59,25 @@ fig, ax0 = plt.subplots(1, 1)
 p0 = ax0.imshow(complst_d, cmap = plt.cm.bwr)
 plt.colorbar(p0)
 
-# difference against lp/lc?
+### difference against lp/lc?
 # reshape
 lcrs = pd.DataFrame(lcr.reshape([lcr.shape[0], lcr.shape[1]*lcr.shape[2]]).T, columns = classes)
 lamcrs = pd.DataFrame(lamcr.reshape([lamcr.shape[1]*lamcr.shape[2]]).T, columns = ['lamcr'])
-complst_ds = pd.DataFrame(complst_d.reshape([complst_d.shape[0]*complst_d.shape[1]]).T, columns = ['lst_diff'])
+complsts = pd.DataFrame(complst_d.reshape([complst_d.shape[0]*complst_d.shape[1]]).T, columns = ['lfn'])
 # concat
-merge = pd.concat([lcrs, lamcrs, complst_ds], axis = 1)
+merge = pd.concat([lcrs, lamcrs, complsts], axis = 1)
 
 # filter for bulding fraction, nas
 merge = merge.dropna()
 mergeb = merge[merge['building'] > 0.5]
 plt.scatter(mergeb['lamcr'], mergeb['lst_diff'], alpha = 0.05)
 
-
 # bin based on lc, dsm??
+bins = [1, 2, 4, 6, 8, 15, 50]
+binned = []
+bin_centers = []
+for b in range(6):
+    binned.append(np.mean(mergeb[(mergeb['lamcr'] > bins[b]) & (mergeb['lamcr'] < bins[b+1])]['lst_diff']))
+    bin_centers.append((bins[b+1]+bins[b])/2)
 
+plt.scatter(bin_centers, binned)

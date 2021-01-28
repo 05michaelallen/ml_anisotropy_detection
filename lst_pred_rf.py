@@ -40,7 +40,7 @@ from datetime import datetime
 
 os.chdir("/Users/mallen/Documents/ecostress_p2/code")
 city = 'la'
-rtype = 'none'
+rtype = 'standardize'
 seed = 2021
 
 # flags
@@ -49,6 +49,7 @@ diagnostic_plots = False
 ext_shp = False
 sub_manhattan = False
 output = True
+extract_output_to_shp = True
 
 # =============================================================================
 # functions
@@ -142,7 +143,7 @@ dtc, dtcr = import_reshape("../data/dtc/" + city + "_grid_join_rasterize_clip.ti
 # import shapefile for zonal aggregation, convert land cover to to df
 if city == "la":
     classes = ["tree", "grass", "soil", "water", "building", "road", "other_imp", "tallshrub"]
-    shp = gpd.read_file("../data/shp/Los Angeles Neighborhood Map/geo_export_3b62483e-90a4-4acf-9359-a830f3086143_utm.shp")
+    shp = gpd.read_file("../data/shp/Los Angeles Neighborhood Map/geo_export_3b62483e-90a4-4acf-9359-a830f3086143_utm_clip_clean.shp")
 elif city == "nyc":
     classes = ["tree", "grass", "soil", "water", "building", "road", "other_imp", "rail"]
     shp = gpd.read_file("../data/shp/nynta_20d/nynta_utm.shp")
@@ -189,7 +190,9 @@ out_meta.update({"dtype": 'float64',
                  "count": 3})
 
 ### filter metadata to retrieve image indices 
-meta_vz = meta[(meta['view_zenith'] > 12) & (meta['view_azimuth_adj'] > 180) & (meta['view_azimuth_adj'] < 360)]
+#meta_vz = meta[(meta['view_zenith'] > 12) & (meta['view_azimuth_adj'] > 180) & (meta['view_azimuth_adj'] < 360)] # afternoon off nadir, west side of sky
+#meta_vz = meta[(meta['view_zenith'] > 12) & (meta['view_azimuth_adj'] < 180)] # afternoon off nadir, east side of sky
+meta_vz = meta[(meta['view_zenith'] < 12)] # afternoon nadir
 meta_vza = meta_vz[(meta['solar_zenith_adj'] > -10) & (meta['hourfrac'] > 12)]
 
 ### rescale each image
@@ -322,9 +325,9 @@ if diagnostic_plots:
     #ax0.scatter(merge_pred['lamc'], merge['lst'] - merge_pred['pred'])
     #ax0.plot([, 5], [-5, 5])
 
-### residuals
-fig, ax0 = plt.subplots(1, 1)
-ax0.scatter(pred_test, resid, alpha = 0.025, c = 'dodgerblue')
+    ### residuals
+    #fig, ax0 = plt.subplots(1, 1)
+    #ax0.scatter(pred_test, resid, alpha = 0.025, c = 'dodgerblue')
 
 # output rasters and metadata
 if output:
@@ -348,6 +351,30 @@ if output:
     targeto = np.array(merge_pred['lst']).reshape(lstfr.shape[0],lstfr.shape[1])
     predo = np.array(merge_pred['pred']).reshape(lstfr.shape[0],lstfr.shape[1])
     resido = np.array(merge_pred['resid']).reshape(lstfr.shape[0],lstfr.shape[1])
-    with rio.open("../data/rf_output/" + t + "_" + city + "_output.tif", 'w', **out_meta) as dst:
+    
+    # filename
+    fn_out = "../data/rf_output/" + t + "_va" + str(np.round(meta_vza['view_azimuth_adj'].mean(), 1)) + "_vz" + str(np.round(meta_vza['view_zenith'].mean(), 1)) + "_sa" + str(np.round(meta_vza['solar_azimuth_adj'].mean(), 1)) + "_" + city + "_output.tif"
+    # output
+    with rio.open(fn_out, 'w', **out_meta) as dst:
         dst.write(np.stack([targeto, predo, resido]))
 
+# =============================================================================
+# extract to shapefile
+# =============================================================================
+    out_shp = []
+    out_stats = ['mean']
+    for i in range(3):
+        out_shpi = rs.zonal_stats(shp, 
+                                  rio.open(fn_out).read()[i], 
+                                  affine = rio.open(fn_out).transform, 
+                                  stats = out_stats)
+        for s in range(len(out_stats)):
+            out_shpis = [np.asarray([x[attribute] for x in out_shpi]) for attribute in [out_stats[s]]][0]
+            out_shpis[out_shpis == None] = np.nan # tag unfilled as nan
+            out_shp.append(out_shpis.astype(float))
+    
+    # convert to array
+    out_shp = pd.concat([shp, pd.DataFrame(np.array(out_shp).T, columns = ['target', 'predict', 'residual'])], axis = 1)
+    #out_shp.plot(column = 0, legend = True)
+    # output
+    out_shp.to_file("../data/rf_output/" + t + "_va" + str(np.round(meta_vza['view_azimuth_adj'].mean(), 1)) + "_vz" + str(np.round(meta_vza['view_zenith'].mean(), 1)) + "_sa" + str(np.round(meta_vza['solar_azimuth_adj'].mean(), 1)) + "_" + city + "_output.shp")
