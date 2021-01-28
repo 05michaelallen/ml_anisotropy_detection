@@ -60,6 +60,7 @@ def rescale(img, rtype):
     imgmean = np.nanmean(img)
     imgsd = np.nanstd(img)
     imgiqr = np.nanquantile(img, 0.75, axis = (0)) - np.nanquantile(img, 0.25, axis = (0))
+    
     # compute selected standardization method
     img_stn = []
     if rtype == "standardize":
@@ -190,10 +191,10 @@ out_meta.update({"dtype": 'float64',
                  "count": 3})
 
 ### filter metadata to retrieve image indices 
-#meta_vz = meta[(meta['view_zenith'] > 12) & (meta['view_azimuth_adj'] > 180) & (meta['view_azimuth_adj'] < 360)] # afternoon off nadir, west side of sky
-#meta_vz = meta[(meta['view_zenith'] > 12) & (meta['view_azimuth_adj'] < 180)] # afternoon off nadir, east side of sky
-meta_vz = meta[(meta['view_zenith'] < 12)] # afternoon nadir
-meta_vza = meta_vz[(meta['solar_zenith_adj'] > -10) & (meta['hourfrac'] > 12)]
+#meta_vz = meta[(meta['view_zenith'] > 12) & (meta['view_azimuth_adj'] > 180) & (meta['view_azimuth_adj'] < 360)] # off nadir, west side of sky
+#meta_vz = meta[(meta['view_zenith'] > 12) & (meta['view_azimuth_adj'] < 180)] # off nadir, east side of sky
+meta_vz = meta[(meta['view_zenith'] < 12)] # nadir
+meta_vza = meta_vz[(meta['solar_zenith_adj'] > -10) & (meta['hourfrac'] < 12)]
 
 ### rescale each image
 # none for LA standardize seems to do best
