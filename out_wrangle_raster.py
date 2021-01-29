@@ -57,8 +57,8 @@ runmeta.columns = lfn
 # analysis
 # =============================================================================
 # plot eg
-fig, ax0 = plt.subplots(1, 1)
-p0 = ax0.imshow(complst[1], vmin = -2, vmax = 2)
+#fig, ax0 = plt.subplots(1, 1)
+#p0 = ax0.imshow(complst[1], vmin = -2, vmax = 2)
 
 ### difference against lp/lc?
 # reshape
